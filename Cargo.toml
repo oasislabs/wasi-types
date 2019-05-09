@@ -1,0 +1,12 @@
+[package]
+name = "wasi-types"
+version = "0.1.0"
+authors = ["Nick Hynes <nhynes@oasislabs.com>"]
+edition = "2018"
+
+[dependencies]
+bitflags = "1.0"
+proper = "0.1"
+
+[patch.crates-io]
+proper = { path = "../proper" }
