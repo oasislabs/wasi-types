@@ -7,6 +7,7 @@ extern crate bitflags;
 extern crate proper;
 
 /// File or memory access pattern advisory information.
+#[repr(u8)]
 #[derive(Prim)]
 pub enum Advice {
     /// The application has no advice to give on its behavior with respect to the specified data.
@@ -29,8 +30,8 @@ pub enum Advice {
 }
 
 /// Identifiers for clocks.
+#[repr(u8)]
 #[derive(Prim)]
-#[prim(ty = "u8")]
 pub enum ClockId {
     /// The clock measuring real time. Time value zero corresponds with 1970-01-01T00:00:00Z.
     RealTime,
@@ -51,11 +52,13 @@ pub enum ClockId {
 
 /// Identifier for a device containing a file system. Can be used in combination with `Inode`
 /// to uniquely identify a file or directory in the filesystem.
-#[derive(Prim)]
+#[repr(C)]
+#[derive(Clone, Copy, Prim)]
 pub struct Device(u64);
 
 /// A reference to the offset of a directory entry.
-#[derive(Prim)]
+#[repr(C)]
+#[derive(Clone, Copy, Prim)]
 pub struct DirCookie(u64);
 
 impl DirCookie {
@@ -67,40 +70,25 @@ impl DirCookie {
 }
 
 /// A directory entry.
+#[repr(C)]
+#[derive(Clone, Copy)]
 pub struct DirEnt {
     /// The offset of the next directory entry stored in this directory.
-    next: DirCookie,
+    pub next: DirCookie,
 
     /// The serial number of the file referred to by this directory entry.
-    inode: Inode,
+    pub inode: Inode,
 
     /// The length of the name of the directory entry.
-    name_len: u32,
+    pub name_len: u32,
 
     /// The type of the file referred to by this directory entry.
-    file_type: FileType,
-}
-
-impl DirEnt {
-    pub fn next(&self) -> &DirCookie {
-        &self.next
-    }
-
-    pub fn inode(&self) -> &Inode {
-        &self.inode
-    }
-
-    pub fn name_len(&self) -> u32 {
-        self.name_len
-    }
-
-    pub fn file_type(&self) -> &FileType {
-        &self.file_type
-    }
+    pub file_type: FileType,
 }
 
 /// Error codes returned by functions.
-#[derive(Prim)]
+#[repr(u16)]
+#[derive(Clone, Copy, Prim)]
 #[prim(ty = "u16")]
 pub enum ErrNo {
     /// No error occurred. System call completed successfully.
@@ -259,7 +247,7 @@ pub enum ErrNo {
     /// No space left on device.
     NoSpace,
 
-    /// Function not supported.
+    /// Function not supported. (Always unsupported.)
     NoSys,
 
     /// The socket is not connected.
@@ -277,7 +265,7 @@ pub enum ErrNo {
     /// Not a socket.
     NotSock,
 
-    /// Not supported, or operation not supported on socket.
+    /// Not supported, or operation not supported on socket. (Transient unsupported.)
     NotSup,
 
     /// Inappropriate I/O control operation.
@@ -335,32 +323,16 @@ pub enum ErrNo {
     NotCapable,
 }
 
+#[derive(Clone, Copy)]
 pub struct Event {
-    user_data: UserData,
-    error: ErrNo,
-    ty: EventType,
-    fd_state: Option<EventFdState>,
+    pub user_data: UserData,
+    pub error: ErrNo,
+    pub ty: EventType,
+    pub fd_state: Option<EventFdState>, // only valid when `ty \in {FdRead, FdWrite}`
 }
 
-impl Event {
-    pub fn user_data(&self) -> UserData {
-        self.user_data
-    }
-
-    pub fn error(&self) -> &ErrNo {
-        &self.error
-    }
-
-    pub fn ty(&self) -> &EventType {
-        &self.ty
-    }
-
-    pub fn fd_state(&self) -> Option<&EventFdState> {
-        self.fd_state.as_ref()
-    }
-}
-
-#[derive(Prim)]
+#[repr(u8)]
+#[derive(Clone, Copy, Prim)]
 pub enum EventType {
     /// The time value of clock `SubscriptionType::clock.clock_id` has reached timestamp
     /// `Subscription::clock.timeout`.
@@ -376,7 +348,8 @@ pub enum EventType {
 }
 
 /// The state of the file descriptor subscribed to with `EventType::FdRead` or `EventType::FdWrite`.
-#[derive(Prim, Clone, Copy)]
+#[repr(u16)]
+#[derive(Clone, Copy, Prim)]
 #[prim(ty = "u16")]
 pub enum EventRwFlags {
     None,
@@ -385,84 +358,63 @@ pub enum EventRwFlags {
 
 pub type ExitCode = u32;
 
+#[repr(C)]
+#[derive(Clone, Copy)]
 pub struct EventFdState {
-    file_size: FileSize,
-    flags: EventRwFlags,
-}
-
-impl EventFdState {
-    pub fn file_size(&self) -> FileSize {
-        self.file_size
-    }
-
-    pub fn flags(&self) -> EventRwFlags {
-        self.flags
-    }
+    pub file_size: FileSize,
+    pub flags: EventRwFlags,
 }
 
 /// A file descriptor number.
 /// As in POSIX, 0, 1, and 2 are stdin, stdout, and stderr, respectively.
 /// File descriptors are not guaranteed to be contiguous or allocated in ascending order.
 /// Information about a file descriptor may be obtained through `fd_prestat_get`.
-#[derive(Prim)]
+#[repr(C)]
+#[derive(Clone, Copy, Prim)]
 pub struct Fd(u32);
 
-#[derive(Prim)]
-pub enum FdFlags {
-    /// Append mode: Data written to the file is always appended to the file's end.
-    Append,
+bitflags! {
+    pub struct FdFlags: u16 {
+        /// Append mode: Data written to the file is always appended to the file's end.
+        const APPEND = 1 << 0;
 
-    /// Write according to synchronized I/O data integrity completion.
-    /// Only the data stored in the file is synchronized.
-    DSync,
+        /// Write according to synchronized I/O data integrity completion.
+        /// Only the data stored in the file is synchronized.
+        const DSYNC = 1 << 1;
 
-    /// Non-blocking mode.
-    NonBlock,
+        /// Non-blocking mode.
+        const NONBLOCK = 1 << 2;
 
-    /// Synchronized read I/O operations.
-    RSync,
+        /// Synchronized read I/O operations.
+        const RSYNC = 1 << 3;
 
-    /// Write according to synchronized I/O file integrity completion. In addition to synchronizing
-    /// the data stored in the file, the implementation may also synchronously update the file's
-    /// metadata.
-    Sync,
+        /// Write according to synchronized I/O file integrity completion. In addition to synchronizing
+        /// the data stored in the file, the implementation may also synchronously update the file's
+        /// metadata.
+        const SYNC = 1 << 4;
+    }
 }
 
+#[repr(C)]
+#[derive(Clone, Copy)]
 pub struct FdStat {
-    file_type: FileType,
-    flags: FdFlags,
+    pub file_type: FileType,
+    pub flags: FdFlags,
 
     /// Rights that apply to this file descriptor.
-    rights_base: Rights,
+    pub rights_base: Rights,
 
     /// Maximum set of rights that may be installed on new file descriptors that are created
     /// through this file descripto
-    rights_inheriting: Rights,
-}
-
-impl FdStat {
-    pub fn file_type(&self) -> &FileType {
-        &self.file_type
-    }
-
-    pub fn flags(&self) -> &FdFlags {
-        &self.flags
-    }
-
-    pub fn rights_base(&self) -> &Rights {
-        &self.rights_base
-    }
-
-    pub fn rights_inheriting(&self) -> &Rights {
-        &self.rights_inheriting
-    }
+    pub rights_inheriting: Rights,
 }
 
 /// Relative offset within a file.
 pub type FileDelta = i64;
 
 /// The type of a file descriptor or file.
-#[derive(Prim)]
+#[repr(u8)]
+#[derive(Clone, Copy, Prim)]
 pub enum FileType {
     Unknown,
     BlockDevice,
@@ -477,8 +429,49 @@ pub enum FileType {
 pub type FileSize = u64;
 
 /// File serial number that is unique within its file system.
-#[derive(Prim)]
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub struct FileStat {
+    pub device: Device,
+    pub inode: Inode,
+    pub file_type: FileType,
+    pub num_links: LinkCount,
+    pub file_size: FileSize,
+    pub atime: Timestamp,
+    pub mtime: Timestamp,
+    pub ctime: Timestamp,
+}
+
+/// File serial number that is unique within its file system.
+#[derive(Clone, Copy, Prim)]
 pub struct Inode(u64);
+
+pub type Size = u32;
+pub type Pointer = u32;
+
+/// A region of memory for scatter/gather reads.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct IoVec {
+    pub buf: Pointer,
+    pub len: Size,
+}
+
+/// Number of hard links to an inode.
+#[derive(Clone, Copy, Prim)]
+pub struct LinkCount(u32);
+
+/// Information about a preopened resource.
+#[derive(Clone, Copy)]
+pub struct Prestat {
+    resource_type: PreopenType,
+}
+
+// TODO: impl FromWasmPtr
+#[derive(Clone, Copy)]
+pub enum PreopenType {
+    Dir { name_len: Size },
+}
 
 bitflags! {
     pub struct Rights: u64 {
@@ -514,7 +507,7 @@ bitflags! {
 }
 
 /// Timestamp in nanoseconds.
-#[derive(Prim)]
+#[derive(Prim, Clone, Copy)]
 pub struct Timestamp(u64);
 
 impl Timestamp {
@@ -528,6 +521,15 @@ impl Timestamp {
 
     pub fn as_nanos(&self) -> u64 {
         self.0
+    }
+}
+
+bitflags! {
+    pub struct SetTimeFlags: u16 {
+        const ATIME     = 1 << 0;
+        const ATIME_NOW = 1 << 1;
+        const MTIME     = 1 << 2;
+        const MTIME_NOW = 1 << 3;
     }
 }
 
