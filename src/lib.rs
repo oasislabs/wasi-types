@@ -8,7 +8,7 @@ extern crate proper;
 
 /// File or memory access pattern advisory information.
 #[repr(u8)]
-#[derive(Prim)]
+#[derive(PartialEq, Prim)]
 pub enum Advice {
     /// The application has no advice to give on its behavior with respect to the specified data.
     Normal,
@@ -31,7 +31,7 @@ pub enum Advice {
 
 /// Identifiers for clocks.
 #[repr(u8)]
-#[derive(Prim)]
+#[derive(PartialEq, Prim)]
 pub enum ClockId {
     /// The clock measuring real time. Time value zero corresponds with 1970-01-01T00:00:00Z.
     RealTime,
@@ -53,12 +53,12 @@ pub enum ClockId {
 /// Identifier for a device containing a file system. Can be used in combination with `Inode`
 /// to uniquely identify a file or directory in the filesystem.
 #[repr(C)]
-#[derive(Clone, Copy, Prim)]
+#[derive(Clone, Copy, PartialEq, Prim)]
 pub struct Device(u64);
 
 /// A reference to the offset of a directory entry.
 #[repr(C)]
-#[derive(Clone, Copy, Prim)]
+#[derive(Clone, Copy, PartialEq, Prim)]
 pub struct DirCookie(u64);
 
 impl DirCookie {
@@ -88,7 +88,7 @@ pub struct DirEnt {
 
 /// Error codes returned by functions.
 #[repr(u16)]
-#[derive(Clone, Copy, Prim)]
+#[derive(Clone, Copy, Debug, PartialEq, Prim)]
 #[prim(ty = "u16")]
 pub enum ErrNo {
     /// No error occurred. System call completed successfully.
@@ -323,6 +323,31 @@ pub enum ErrNo {
     NotCapable,
 }
 
+impl From<std::io::Error> for ErrNo {
+    fn from(err: std::io::Error) -> Self {
+        use std::io::ErrorKind;
+        use ErrNo::*;
+        match err.kind() {
+            ErrorKind::NotFound => NoEnt,
+            ErrorKind::PermissionDenied => Access,
+            ErrorKind::ConnectionRefused => ConnRefused,
+            ErrorKind::ConnectionReset => ConnReset,
+            ErrorKind::ConnectionAborted => ConnAborted,
+            ErrorKind::NotConnected => NotConn,
+            ErrorKind::AddrInUse => AddrInUse,
+            ErrorKind::AddrNotAvailable => AddrNotAvail,
+            ErrorKind::BrokenPipe => Pipe,
+            ErrorKind::AlreadyExists => Exist,
+            ErrorKind::WouldBlock => Again,
+            ErrorKind::InvalidInput | ErrorKind::InvalidData => Inval,
+            ErrorKind::TimedOut => TimedOut,
+            ErrorKind::Interrupted => Intr,
+            ErrorKind::WriteZero | ErrorKind::Other | ErrorKind::UnexpectedEof | _ => Io,
+            // _ => ,
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 pub struct Event {
     pub user_data: UserData,
@@ -332,7 +357,7 @@ pub struct Event {
 }
 
 #[repr(u8)]
-#[derive(Clone, Copy, Prim)]
+#[derive(Clone, Copy, PartialEq, Prim)]
 pub enum EventType {
     /// The time value of clock `SubscriptionType::clock.clock_id` has reached timestamp
     /// `Subscription::clock.timeout`.
@@ -349,7 +374,7 @@ pub enum EventType {
 
 /// The state of the file descriptor subscribed to with `EventType::FdRead` or `EventType::FdWrite`.
 #[repr(u16)]
-#[derive(Clone, Copy, Prim)]
+#[derive(Clone, Copy, PartialEq, Prim)]
 #[prim(ty = "u16")]
 pub enum EventRwFlags {
     None,
@@ -359,7 +384,7 @@ pub enum EventRwFlags {
 pub type ExitCode = u32;
 
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct EventFdState {
     pub file_size: FileSize,
     pub flags: EventRwFlags,
@@ -370,7 +395,7 @@ pub struct EventFdState {
 /// File descriptors are not guaranteed to be contiguous or allocated in ascending order.
 /// Information about a file descriptor may be obtained through `fd_prestat_get`.
 #[repr(C)]
-#[derive(Clone, Copy, Prim)]
+#[derive(Clone, Copy, PartialEq, Prim)]
 pub struct Fd(u32);
 
 bitflags! {
@@ -395,6 +420,22 @@ bitflags! {
     }
 }
 
+bitflags! {
+    pub struct OpenFlags: u16 {
+        /// Create file if it does not exist.
+        const CREATE = 1 << 0;
+
+        /// Fail if not a directory.
+        const DIRECTORY = 1 << 1;
+
+        /// Fail if file already exists.
+        const EXCL = 1 << 2;
+
+        /// Truncate file to size 0.
+        const TRUNC = 1 << 3;
+    }
+}
+
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct FdStat {
@@ -405,7 +446,7 @@ pub struct FdStat {
     pub rights_base: Rights,
 
     /// Maximum set of rights that may be installed on new file descriptors that are created
-    /// through this file descripto
+    /// through this file descriptor.
     pub rights_inheriting: Rights,
 }
 
@@ -414,7 +455,7 @@ pub type FileDelta = i64;
 
 /// The type of a file descriptor or file.
 #[repr(u8)]
-#[derive(Clone, Copy, Prim)]
+#[derive(Clone, Copy, PartialEq, Prim)]
 pub enum FileType {
     Unknown,
     BlockDevice,
@@ -428,7 +469,7 @@ pub enum FileType {
 
 pub type FileSize = u64;
 
-/// File serial number that is unique within its file system.
+/// File attributes.
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct FileStat {
@@ -443,7 +484,7 @@ pub struct FileStat {
 }
 
 /// File serial number that is unique within its file system.
-#[derive(Clone, Copy, Prim)]
+#[derive(Clone, Copy, PartialEq, Prim)]
 pub struct Inode(u64);
 
 pub type Size = u32;
@@ -458,13 +499,13 @@ pub struct IoVec {
 }
 
 /// Number of hard links to an inode.
-#[derive(Clone, Copy, Prim)]
+#[derive(Clone, Copy, PartialEq, Prim)]
 pub struct LinkCount(u32);
 
 /// Information about a preopened resource.
 #[derive(Clone, Copy)]
 pub struct Prestat {
-    resource_type: PreopenType,
+    pub resource_type: PreopenType,
 }
 
 // TODO: impl FromWasmPtr
@@ -534,3 +575,12 @@ bitflags! {
 }
 
 pub type UserData = u64;
+
+/// The position relative to which to set the offset of the file descriptor.
+#[repr(u8)]
+#[derive(Clone, Copy, PartialEq, Prim)]
+pub enum Whence {
+    Current,
+    End,
+    Start,
+}
