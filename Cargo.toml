@@ -1,8 +1,12 @@
 [package]
 name = "wasi-types"
 version = "0.1.0"
-authors = ["Nick Hynes <nhynes@oasislabs.com>"]
+authors = ["Oasis Labs <info@oasislabs.com>"]
 edition = "2018"
+description = "Rusty bindings for WASI libc types."
+readme = "README.md"
+repository = "https://github.com/oasislabs/wasi-types"
+license = "Apache-2.0"
 
 [dependencies]
 bitflags = "1.0"
