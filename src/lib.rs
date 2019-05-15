@@ -499,8 +499,7 @@ pub struct IoVec {
 }
 
 /// Number of hard links to an inode.
-#[derive(Clone, Copy, PartialEq, Prim)]
-pub struct LinkCount(u32);
+pub type LinkCount = u32;
 
 /// Information about a preopened resource.
 #[derive(Clone, Copy)]
