@@ -549,6 +549,39 @@ bitflags! {
     }
 }
 
+/// Signal condition.
+#[repr(u8)]
+#[derive(Clone, Copy, PartialEq, Prim)]
+pub enum Signal {
+    Reserved,
+    Abort,
+    Alarm,
+    Bus,
+    Child,
+    Cont,
+    FP,
+    Hup,
+    Ill,
+    Int,
+    Kill,
+    Pipe,
+    Quit,
+    Seg,
+    Stop,
+    Sys,
+    Term,
+    Trap,
+    TStp,
+    TTIn,
+    TTOut,
+    Urg,
+    Usr1,
+    Usr2,
+    VTAlrm,
+    XCpu,
+    XFSz,
+}
+
 /// Timestamp in nanoseconds.
 #[derive(Prim, Clone, Copy, Debug)]
 pub struct Timestamp(u64);
