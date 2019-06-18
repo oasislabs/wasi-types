@@ -1,5 +1,6 @@
 //! Rusty WASI type definitions based on
 //! [the spec](https://github.com/CraneStation/wasmtime/blob/master/docs/WASI-api.md)
+#![feature(non_exhaustive)]
 
 #[macro_use]
 extern crate bitflags;
@@ -8,7 +9,7 @@ extern crate proper;
 
 /// File or memory access pattern advisory information.
 #[repr(u8)]
-#[derive(PartialEq, Prim)]
+#[derive(Clone, Copy, PartialEq, Prim)]
 pub enum Advice {
     /// The application has no advice to give on its behavior with respect to the specified data.
     Normal,
@@ -31,7 +32,7 @@ pub enum Advice {
 
 /// Identifiers for clocks.
 #[repr(u8)]
-#[derive(PartialEq, Prim)]
+#[derive(Clone, Copy, PartialEq, Prim)]
 pub enum ClockId {
     /// The clock measuring real time. Time value zero corresponds with 1970-01-01T00:00:00Z.
     RealTime,
@@ -90,6 +91,7 @@ pub struct DirEnt {
 #[repr(u16)]
 #[derive(Clone, Copy, Debug, PartialEq, Prim)]
 #[prim(ty = "u16")]
+#[non_exhaustive]
 pub enum ErrNo {
     /// No error occurred. System call completed successfully.
     Success,
@@ -206,7 +208,7 @@ pub enum ErrNo {
     NameTooLong,
 
     /// Network is down.
-    Netdown,
+    NetDown,
 
     /// Connection aborted by network.
     NetReset,
@@ -348,7 +350,7 @@ impl From<std::io::Error> for ErrNo {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Event {
     pub user_data: UserData,
     pub error: ErrNo,
@@ -399,6 +401,7 @@ pub struct EventFdState {
 pub struct Fd(u32);
 
 bitflags! {
+    #[derive(Default)]
     pub struct FdFlags: u16 {
         /// Append mode: Data written to the file is always appended to the file's end.
         const APPEND = 1 << 0;
@@ -421,6 +424,7 @@ bitflags! {
 }
 
 bitflags! {
+    #[derive(Default)]
     pub struct OpenFlags: u16 {
         /// Create file if it does not exist.
         const CREATE = 1 << 0;
@@ -437,7 +441,7 @@ bitflags! {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct FdStat {
     pub file_type: FileType,
     pub flags: FdFlags,
@@ -470,7 +474,7 @@ pub enum FileType {
 pub type FileSize = u64;
 
 /// File attributes.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 #[repr(C)]
 pub struct FileStat {
     pub device: Device,
@@ -492,7 +496,7 @@ pub type Pointer = u32;
 
 /// A region of memory for scatter/gather reads.
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct IoVec {
     pub buf: Pointer,
     pub len: Size,
@@ -502,18 +506,19 @@ pub struct IoVec {
 pub type LinkCount = u32;
 
 /// Information about a preopened resource.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Prestat {
     pub resource_type: PreopenType,
 }
 
 // TODO: impl FromWasmPtr
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum PreopenType {
     Dir { name_len: Size },
 }
 
 bitflags! {
+    #[derive(Default)]
     pub struct Rights: u64 {
         const FD_DATASYNC             = 1 << 0;
         const FD_READ                 = 1 << 1;
@@ -546,8 +551,41 @@ bitflags! {
     }
 }
 
+/// Signal condition.
+#[repr(u8)]
+#[derive(Clone, Copy, PartialEq, Prim)]
+pub enum Signal {
+    Reserved,
+    Abort,
+    Alarm,
+    Bus,
+    Child,
+    Cont,
+    FP,
+    Hup,
+    Ill,
+    Int,
+    Kill,
+    Pipe,
+    Quit,
+    Seg,
+    Stop,
+    Sys,
+    Term,
+    Trap,
+    TStp,
+    TTIn,
+    TTOut,
+    Urg,
+    Usr1,
+    Usr2,
+    VTAlrm,
+    XCpu,
+    XFSz,
+}
+
 /// Timestamp in nanoseconds.
-#[derive(Prim, Clone, Copy)]
+#[derive(Prim, Clone, Copy, Debug)]
 pub struct Timestamp(u64);
 
 impl Timestamp {
