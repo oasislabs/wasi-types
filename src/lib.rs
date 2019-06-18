@@ -1,5 +1,6 @@
 //! Rusty WASI type definitions based on
 //! [the spec](https://github.com/CraneStation/wasmtime/blob/master/docs/WASI-api.md)
+#![feature(non_exhaustive)]
 
 #[macro_use]
 extern crate bitflags;
@@ -90,6 +91,7 @@ pub struct DirEnt {
 #[repr(u16)]
 #[derive(Clone, Copy, Debug, PartialEq, Prim)]
 #[prim(ty = "u16")]
+#[non_exhaustive]
 pub enum ErrNo {
     /// No error occurred. System call completed successfully.
     Success,
@@ -206,7 +208,7 @@ pub enum ErrNo {
     NameTooLong,
 
     /// Network is down.
-    Netdown,
+    NetDown,
 
     /// Connection aborted by network.
     NetReset,
