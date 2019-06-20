@@ -505,6 +505,14 @@ pub struct IoVec {
 /// Number of hard links to an inode.
 pub type LinkCount = u32;
 
+bitflags! {
+    #[derive(Default)]
+    pub struct LookupFlags: u32 {
+        /// Follow symlinks.
+        const SYMLINK_FOLLOW = 1 << 0;
+    }
+}
+
 /// Information about a preopened resource.
 #[derive(Clone, Copy, Debug)]
 pub struct Prestat {
