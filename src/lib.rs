@@ -519,7 +519,7 @@ pub struct Prestat {
     pub resource_type: PreopenType,
 }
 
-// TODO: impl FromWasmPtr
+#[repr(C)]
 #[derive(Clone, Copy, Debug)]
 pub enum PreopenType {
     Dir { name_len: Size },
