@@ -54,12 +54,12 @@ pub enum ClockId {
 /// Identifier for a device containing a file system. Can be used in combination with `Inode`
 /// to uniquely identify a file or directory in the filesystem.
 #[repr(C)]
-#[derive(Clone, Copy, Debug, PartialEq, Prim)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Prim)]
 pub struct Device(u64);
 
 /// A reference to the offset of a directory entry.
 #[repr(C)]
-#[derive(Clone, Copy, Debug, PartialEq, Prim)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Prim)]
 pub struct DirCookie(u64);
 
 impl DirCookie {
@@ -72,7 +72,7 @@ impl DirCookie {
 
 /// A directory entry.
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct DirEnt {
     /// The offset of the next directory entry stored in this directory.
     pub next: DirCookie,
@@ -89,7 +89,7 @@ pub struct DirEnt {
 
 /// Error codes returned by functions.
 #[repr(u16)]
-#[derive(Clone, Copy, Debug, PartialEq, Prim)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Prim)]
 #[prim(ty = "u16")]
 #[non_exhaustive]
 pub enum ErrNo {
@@ -350,7 +350,7 @@ impl From<std::io::Error> for ErrNo {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Event {
     pub user_data: UserData,
     pub error: ErrNo,
@@ -359,7 +359,7 @@ pub struct Event {
 }
 
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Prim)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Prim)]
 pub enum EventType {
     /// The time value of clock `SubscriptionType::clock.clock_id` has reached timestamp
     /// `Subscription::clock.timeout`.
@@ -376,7 +376,7 @@ pub enum EventType {
 
 /// The state of the file descriptor subscribed to with `EventType::FdRead` or `EventType::FdWrite`.
 #[repr(u16)]
-#[derive(Clone, Copy, Debug, PartialEq, Prim)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Prim)]
 #[prim(ty = "u16")]
 pub enum EventRwFlags {
     None,
@@ -386,7 +386,7 @@ pub enum EventRwFlags {
 pub type ExitCode = u32;
 
 #[repr(C)]
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct EventFdState {
     pub file_size: FileSize,
     pub flags: EventRwFlags,
@@ -397,7 +397,7 @@ pub struct EventFdState {
 /// File descriptors are not guaranteed to be contiguous or allocated in ascending order.
 /// Information about a file descriptor may be obtained through `fd_prestat_get`.
 #[repr(C)]
-#[derive(Clone, Copy, Debug, PartialEq, Prim)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Prim)]
 pub struct Fd(u32);
 
 bitflags! {
@@ -441,7 +441,7 @@ bitflags! {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct FdStat {
     pub file_type: FileType,
     pub flags: FdFlags,
@@ -459,7 +459,7 @@ pub type FileDelta = i64;
 
 /// The type of a file descriptor or file.
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Prim)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Prim)]
 pub enum FileType {
     Unknown,
     BlockDevice,
@@ -474,7 +474,7 @@ pub enum FileType {
 pub type FileSize = u64;
 
 /// File attributes.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(C)]
 pub struct FileStat {
     pub device: Device,
@@ -488,7 +488,7 @@ pub struct FileStat {
 }
 
 /// File serial number that is unique within its file system.
-#[derive(Clone, Copy, Debug, PartialEq, Prim)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Prim)]
 pub struct Inode(u64);
 
 pub type Size = u32;
@@ -496,7 +496,7 @@ pub type Pointer = u32;
 
 /// A region of memory for scatter/gather reads.
 #[repr(C)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct IoVec {
     pub buf: Pointer,
     pub len: Size,
@@ -514,13 +514,13 @@ bitflags! {
 }
 
 /// Information about a preopened resource.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Prestat {
     pub resource_type: PreopenType,
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PreopenType {
     Dir { name_len: Size },
 }
@@ -593,7 +593,7 @@ pub enum Signal {
 }
 
 /// Timestamp in nanoseconds.
-#[derive(Prim, Clone, Copy, Debug)]
+#[derive(Prim, Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Timestamp(u64);
 
 impl Timestamp {
