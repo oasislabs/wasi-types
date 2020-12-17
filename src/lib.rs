@@ -1,15 +1,25 @@
 //! Rusty WASI type definitions based on
 //! [the spec](https://github.com/CraneStation/wasmtime/blob/master/docs/WASI-api.md)
-#![feature(non_exhaustive)]
+
+
+#![cfg_attr(feature = "sgx", no_std)]
+
+#[cfg(feature = "sgx")]
+#[macro_use]
+extern crate sgx_tstd as std;
 
 #[macro_use]
 extern crate bitflags;
 #[macro_use]
 extern crate proper;
+use std::cmp::Ordering;
+use std::convert::TryFrom;
+use serde::{Deserialize, Serialize};
+use err_derive::Error;
 
 /// File or memory access pattern advisory information.
 #[repr(u8)]
-#[derive(Clone, Copy, PartialEq, Prim)]
+#[derive(Clone, Copy, PartialEq, Prim, Debug)]
 pub enum Advice {
     /// The application has no advice to give on its behavior with respect to the specified data.
     Normal,
@@ -28,6 +38,13 @@ pub enum Advice {
 
     /// The application expects to access the specified data in the near future.
     WillNeed,
+}
+
+impl From<Advice> for u8 {
+    #[inline]
+    fn from(advice: Advice) -> Self {
+        advice as u8
+    }
 }
 
 /// Identifiers for clocks.
@@ -49,6 +66,13 @@ pub enum ClockId {
 
     /// The CPU-time clock associated with the current thread.
     ThreadCpuTime,
+}
+
+impl From<ClockId> for u8 {
+    #[inline]
+    fn from(clockid: ClockId) -> Self {
+        clockid as u8
+    }
 }
 
 /// Identifier for a device containing a file system. Can be used in combination with `Inode`
@@ -89,240 +113,324 @@ pub struct DirEnt {
 
 /// Error codes returned by functions.
 #[repr(u16)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Prim)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Prim, Serialize, Deserialize, Error)]
 #[prim(ty = "u16")]
 #[non_exhaustive]
 pub enum ErrNo {
     /// No error occurred. System call completed successfully.
+    #[error(display = "Success")]
     Success,
 
     /// Argument list too long.
+    #[error(display = "TooBig")]
     TooBig,
 
     /// Permission denied.
+    #[error(display = "Access")]
     Access,
 
     /// Address in use.
+    #[error(display = "AddrInUse")]
     AddrInUse,
 
     /// Address not available.
+    #[error(display = "AddrNotAvail")]
     AddrNotAvail,
 
     /// Address family not supported.
+    #[error(display = "AfNoSupport")]
     AfNoSupport,
 
     /// Resource unavailable, or operation would block.
+    #[error(display = "Again")]
     Again,
 
     /// Connection already in progress.
+    #[error(display = "Already")]
     Already,
 
     /// Bad file descriptor.
+    #[error(display = "BadF")]
     BadF,
 
     /// Bad message.
+    #[error(display = "BadMsg")]
     BadMsg,
 
     /// Device or resource busy.
+    #[error(display = "Busy")]
     Busy,
 
     /// Operation canceled.
+    #[error(display = "Canceled")]
     Canceled,
 
     /// No child processes.
+    #[error(display = "Child")]
     Child,
 
     /// Connection aborted.
+    #[error(display = "ConnAborted")]
     ConnAborted,
 
     /// Connection refused.
+    #[error(display = "ConnRefused")]
     ConnRefused,
 
     /// Connection reset.
+    #[error(display = "ConnReset")]
     ConnReset,
 
     /// Resource deadlock would occur.
+    #[error(display = "Deadlk")]
     Deadlk,
 
     /// Destination address required.
+    #[error(display = "DestAddrReq")]
     DestAddrReq,
 
     /// Mathematics argument out of domain of function.
+    #[error(display = "Domain")]
     Domain,
 
     /// Reserved. (Quota exceeded.)
+    #[error(display = "DQuot")]
     DQuot,
 
     /// File exists.
+    #[error(display = "Exist")]
     Exist,
 
     /// Bad address.
+    #[error(display = "Fault")]
     Fault,
 
     /// File too large.
+    #[error(display = "FBig")]
     FBig,
 
     /// Host is unreachable.
+    #[error(display = "HostUnreach")]
     HostUnreach,
 
     /// Identifier removed.
+    #[error(display = "IdRm")]
     IdRm,
 
     /// Illegal byte sequence.
+    #[error(display = "IlSeq")]
     IlSeq,
 
     /// Operation in progress.
+    #[error(display = "InProgress")]
     InProgress,
 
     /// Interrupted function.
+    #[error(display = "Intr")]
     Intr,
 
     /// Invalid argument.
+    #[error(display = "Inval")]
     Inval,
 
     /// I/O error.
+    #[error(display = "Io")]
     Io,
 
     /// Socket is connected.
+    #[error(display = "IsConn")]
     IsConn,
 
     /// Is a directory.
+    #[error(display = "IsDir")]
     IsDir,
 
     /// Too many levels of symbolic links.
+    #[error(display = "Loop")]
     Loop,
 
     /// File descriptor value too large.
+    #[error(display = "MFile")]
     MFile,
 
     /// Too many links.
+    #[error(display = "MLink")]
     MLink,
 
     /// Message too large.
+    #[error(display = "MsgSize")]
     MsgSize,
 
     /// Reserved. (Multihop attempted.)
+    #[error(display = "Multihop")]
     Multihop,
 
     /// Filename too long.
+    #[error(display = "NameTooLong")]
     NameTooLong,
 
     /// Network is down.
+    #[error(display = "NetDown")]
     NetDown,
 
     /// Connection aborted by network.
+    #[error(display = "NetReset")]
     NetReset,
 
     /// Network unreachable.
+    #[error(display = "NetUnreach")]
     NetUnreach,
 
     /// Too many files open in system.
+    #[error(display = "NFile")]
     NFile,
 
     /// No buffer space available.
+    #[error(display = "NoBufS")]
     NoBufS,
 
     /// No such device.
+    #[error(display = "NoDev")]
     NoDev,
 
     /// No such file or directory.
+    #[error(display = "NoEnt")]
     NoEnt,
 
     /// Executable file format error.
+    #[error(display = "NoExec")]
     NoExec,
 
     /// No locks available.
+    #[error(display = "NoLock")]
     NoLock,
 
     /// Reserved. (Link has been severed.)
+    #[error(display = "NoLink")]
     NoLink,
 
     /// Not enough space.
+    #[error(display = "NoMem")]
     NoMem,
 
     /// No message of the desired type.
+    #[error(display = "NoMsg")]
     NoMsg,
 
     /// Protocol not available.
+    #[error(display = "NoProtoOpt")]
     NoProtoOpt,
 
     /// No space left on device.
+    #[error(display = "NoSpace")]
     NoSpace,
 
     /// Function not supported. (Always unsupported.)
+    #[error(display = "NoSys")]
     NoSys,
 
     /// The socket is not connected.
+    #[error(display = "NotConn")]
     NotConn,
 
     /// Not a directory or a symbolic link to a directory.
+    #[error(display = "NotDir")]
     NotDir,
 
     /// Directory not empty.
+    #[error(display = "NotEmpty")]
     NotEmpty,
 
     /// State not recoverable.
+    #[error(display = "NotRecoverable")]
     NotRecoverable,
 
     /// Not a socket.
+    #[error(display = "NotSock")]
     NotSock,
 
     /// Not supported, or operation not supported on socket. (Transient unsupported.)
+    #[error(display = "NotSup")]
     NotSup,
 
     /// Inappropriate I/O control operation.
+    #[error(display = "NoTty")]
     NoTty,
 
     /// No such device or address.
+    #[error(display = "NxIo")]
     NxIo,
 
     /// Value too large to be stored in data type.
+    #[error(display = "Overflow")]
     Overflow,
 
     /// Previous owner died.
+    #[error(display = "OwnerDead")]
     OwnerDead,
 
     /// Operation not permitted.
+    #[error(display = "Perm")]
     Perm,
 
     /// Broken pipe.
+    #[error(display = "Pipe")]
     Pipe,
 
     /// Protocol error.
+    #[error(display = "Proto")]
     Proto,
 
     /// Protocol not supported.
+    #[error(display = "ProtoNoSupport")]
     ProtoNoSupport,
 
     /// Protocol wrong type for socket.
+    #[error(display = "ProtoType")]
     ProtoType,
 
     /// Result too large.
+    #[error(display = "Range")]
     Range,
 
     /// Read-only file system.
+    #[error(display = "RoFs")]
     RoFs,
 
     /// Invalid seek.
+    #[error(display = "SPipe")]
     SPipe,
 
     /// No such process.
+    #[error(display = "Srch")]
     Srch,
 
     /// Reserved. (Stale file handle.)
+    #[error(display = "Stale")]
     Stale,
 
     /// Connection timed out.
+    #[error(display = "TimedOut")]
     TimedOut,
 
     /// Text file busy.
+    #[error(display = "TxtBsy")]
     TxtBsy,
 
     /// Cross-device link.
+    #[error(display = "XDev")]
     XDev,
 
     /// Extension: Capabilities insufficient.
+    #[error(display = "NotCapable")]
     NotCapable,
+}
+
+impl From<ErrNo> for u16 {
+    #[inline]
+    fn from(errno: ErrNo) -> Self {
+        errno as u16
+    }
 }
 
 impl From<std::io::Error> for ErrNo {
@@ -374,6 +482,13 @@ pub enum EventType {
     FdWrite,
 }
 
+impl From<EventType> for u8 {
+    #[inline]
+    fn from(event: EventType) -> Self {
+        event as u8
+    }
+}
+
 /// The state of the file descriptor subscribed to with `EventType::FdRead` or `EventType::FdWrite`.
 #[repr(u16)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Prim)]
@@ -381,6 +496,13 @@ pub enum EventType {
 pub enum EventRwFlags {
     None,
     Hangup,
+}
+
+impl From<EventRwFlags> for u16 {
+    #[inline]
+    fn from(flags: EventRwFlags) -> Self {
+        flags as u16
+    }
 }
 
 pub type ExitCode = u32;
@@ -397,8 +519,20 @@ pub struct EventFdState {
 /// File descriptors are not guaranteed to be contiguous or allocated in ascending order.
 /// Information about a file descriptor may be obtained through `fd_prestat_get`.
 #[repr(C)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Prim)]
-pub struct Fd(u32);
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Prim, Hash)]
+pub struct Fd(pub u32);
+
+impl Ord for Fd {
+    fn cmp(&self, Fd(other): &Self) -> Ordering {
+        self.0.cmp(other)
+    }
+}
+
+impl PartialOrd for Fd {
+    fn partial_cmp(&self, Fd(other): &Self) -> Option<Ordering> {
+        self.0.partial_cmp(other)
+    }
+}
 
 bitflags! {
     #[derive(Default)]
@@ -423,6 +557,22 @@ bitflags! {
     }
 }
 
+impl TryFrom<u16> for FdFlags {
+    type Error = ();
+
+    #[inline]
+    fn try_from(code: u16) -> Result<Self, Self::Error> {
+        FdFlags::from_bits(code).ok_or(())
+    }
+}
+
+impl From<FdFlags> for u16 {
+    #[inline]
+    fn from(flags: FdFlags) -> Self {
+        flags.bits
+    }
+}
+
 bitflags! {
     #[derive(Default)]
     pub struct OpenFlags: u16 {
@@ -437,6 +587,22 @@ bitflags! {
 
         /// Truncate file to size 0.
         const TRUNC = 1 << 3;
+    }
+}
+
+impl TryFrom<u16> for OpenFlags {
+    type Error = ();
+
+    #[inline]
+    fn try_from(code: u16) -> Result<Self, Self::Error> {
+        OpenFlags::from_bits(code).ok_or(())
+    }
+}
+
+impl From<OpenFlags> for u16 {
+    #[inline]
+    fn from(flags: OpenFlags) -> Self {
+        flags.bits
     }
 }
 
@@ -471,6 +637,13 @@ pub enum FileType {
     SymbolicLink,
 }
 
+impl From<FileType> for u8 {
+    #[inline]
+    fn from(ftype: FileType) -> Self {
+        ftype as u8
+    }
+}
+
 pub type FileSize = u64;
 
 /// File attributes.
@@ -488,8 +661,20 @@ pub struct FileStat {
 }
 
 /// File serial number that is unique within its file system.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Prim)]
-pub struct Inode(u64);
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Prim, Hash)]
+pub struct Inode(pub u64);
+
+impl Ord for Inode {
+    fn cmp(&self, Inode(other): &Self) -> Ordering {
+        self.0.cmp(other)
+    }
+}
+
+impl PartialOrd for Inode {
+    fn partial_cmp(&self, Inode(other): &Self) -> Option<Ordering> {
+        self.0.partial_cmp(other)
+    }
+}
 
 pub type Size = u32;
 pub type Pointer = u32;
@@ -513,6 +698,22 @@ bitflags! {
     }
 }
 
+impl TryFrom<u32> for LookupFlags {
+    type Error = ();
+
+    #[inline]
+    fn try_from(code: u32) -> Result<Self, Self::Error> {
+        LookupFlags::from_bits(code).ok_or(())
+    }
+}
+
+impl From<LookupFlags> for u32 {
+    #[inline]
+    fn from(flags: LookupFlags) -> Self {
+        flags.bits
+    }
+}
+
 /// Information about a preopened resource.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Prestat {
@@ -526,7 +727,7 @@ pub enum PreopenType {
 }
 
 bitflags! {
-    #[derive(Default)]
+    #[derive(Default, Serialize, Deserialize)]
     pub struct Rights: u64 {
         const FD_DATASYNC             = 1 << 0;
         const FD_READ                 = 1 << 1;
@@ -556,6 +757,22 @@ bitflags! {
         const PATH_REMOVE_DIRECTORY   = 1 << 25;
         const PATH_UNLINK_FILE        = 1 << 26;
         const POLL_FD_READWRITE       = 1 << 27;
+    }
+}
+
+impl TryFrom<u64> for Rights {
+    type Error = ();
+
+    #[inline]
+    fn try_from(code: u64) -> Result<Self, Self::Error> {
+        Rights::from_bits(code).ok_or(())
+    }
+}
+
+impl From<Rights> for u64 {
+    #[inline]
+    fn from(rights: Rights) -> Self {
+        rights.bits
     }
 }
 
@@ -592,6 +809,13 @@ pub enum Signal {
     XFSz,
 }
 
+impl From<Signal> for u8 {
+    #[inline]
+    fn from(signal: Signal) -> u8 {
+        signal as u8
+    }
+}
+
 /// Timestamp in nanoseconds.
 #[derive(Prim, Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Timestamp(u64);
@@ -619,6 +843,22 @@ bitflags! {
     }
 }
 
+impl TryFrom<u16> for SetTimeFlags {
+    type Error = ();
+
+    #[inline]
+    fn try_from(code: u16) -> Result<Self, Self::Error> {
+        SetTimeFlags::from_bits(code).ok_or(())
+    }
+}
+
+impl From<SetTimeFlags> for u16 {
+    #[inline]
+    fn from(flags: SetTimeFlags) -> Self {
+        flags.bits
+    }
+}
+
 pub type UserData = u64;
 
 /// The position relative to which to set the offset of the file descriptor.
@@ -628,4 +868,11 @@ pub enum Whence {
     Current,
     End,
     Start,
+}
+
+impl From<Whence> for u8 {
+    #[inline]
+    fn from(whence: Whence) -> Self {
+        whence as u8
+    }
 }
