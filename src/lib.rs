@@ -49,7 +49,7 @@ impl From<Advice> for u8 {
 
 /// Identifiers for clocks.
 #[repr(u8)]
-#[derive(Clone, Copy, PartialEq, Prim)]
+#[derive(Clone, Copy, PartialEq, Debug, Prim)]
 pub enum ClockId {
     /// The clock measuring real time. Time value zero corresponds with 1970-01-01T00:00:00Z.
     RealTime,
@@ -874,5 +874,103 @@ impl From<Whence> for u8 {
     #[inline]
     fn from(whence: Whence) -> Self {
         whence as u8
+    }
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct Subscription {
+    pub userdata: UserData, 
+    pub clock: SubscriptionClock,
+    pub fd_readwrite: SubscriptionFdReadwrite,
+}
+
+pub type SubClockFlags = u16;
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct SubscriptionClock {
+    pub clock_id: ClockId,
+    pub timeout: Timestamp,
+    pub precision: Timestamp,
+    pub flags: SubClockFlags,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct SubscriptionFdReadwrite {
+    pub fd: Fd,
+}
+
+bitflags! {
+    #[derive(Default)]
+    pub struct SdFlags: u8 {
+        /// Disables further receive operations.
+        const RD = 1 << 0;
+
+        /// Disables further send operations.
+        const WR = 1 << 1;
+    }
+}
+
+impl TryFrom<u8> for SdFlags {
+    type Error = ();
+
+    #[inline]
+    fn try_from(code: u8) -> Result<Self, Self::Error> {
+        SdFlags::from_bits(code).ok_or(())
+    }
+}
+
+bitflags! {
+    #[derive(Default)]
+    pub struct SiFlags: u16 { 
+        const MUST_BE_ZERO = 0;
+    }
+}
+
+impl TryFrom<u16> for SiFlags {
+    type Error = ();
+
+    #[inline]
+    fn try_from(code: u16) -> Result<Self, Self::Error> {
+        SiFlags::from_bits(code).ok_or(())
+    }
+}
+
+bitflags! {
+    #[derive(Default)]
+    pub struct RiFlags: u16 { 
+        /// Returns the message without removing it.
+        const RECV_PEEK = 1 << 0;
+
+        /// Block until the full amount.
+        const RECV_WAITALL = 1 << 1;
+    }
+}
+
+impl TryFrom<u16> for RiFlags {
+    type Error = ();
+
+    #[inline]
+    fn try_from(code: u16) -> Result<Self, Self::Error> {
+        RiFlags::from_bits(code).ok_or(())
+    }
+}
+
+bitflags! {
+    #[derive(Default)]
+    pub struct RoFlags: u16 { 
+        /// Truncate the message
+        const RECV_DATA_TRUNCATED = 1 << 0;
+    }
+}
+
+impl TryFrom<u16> for RoFlags {
+    type Error = ();
+
+    #[inline]
+    fn try_from(code: u16) -> Result<Self, Self::Error> {
+        RoFlags::from_bits(code).ok_or(())
     }
 }
