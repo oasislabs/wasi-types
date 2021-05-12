@@ -48,7 +48,8 @@ impl From<Advice> for u8 {
 }
 
 /// Identifiers for clocks.
-#[repr(u8)]
+#[repr(u32)]
+#[prim(ty = "u32")]
 #[derive(Clone, Copy, PartialEq, Debug, Prim)]
 pub enum ClockId {
     /// The clock measuring real time. Time value zero corresponds with 1970-01-01T00:00:00Z.
@@ -68,10 +69,10 @@ pub enum ClockId {
     ThreadCpuTime,
 }
 
-impl From<ClockId> for u8 {
+impl From<ClockId> for u32 {
     #[inline]
     fn from(clockid: ClockId) -> Self {
-        clockid as u8
+        clockid as u32
     }
 }
 
@@ -489,7 +490,7 @@ impl From<EventType> for u8 {
     }
 }
 
-/// The state of the file descriptor subscribed to with `EventType::FdRead` or `EventType::FdWrite`.
+/// The state of the file descriptor subscribed to with `EventType::FdRead` or `EventType::FdWrte`.
 #[repr(u16)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Prim)]
 #[prim(ty = "u16")]
@@ -882,8 +883,15 @@ impl From<Whence> for u8 {
 #[derive(Clone, Copy, Debug)]
 pub struct Subscription {
     pub userdata: UserData, 
-    pub clock: SubscriptionClock,
-    pub fd_readwrite: SubscriptionFdReadwrite,
+    pub u: SubscriptionUnion,
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
+pub enum SubscriptionUnion {
+    Clock(SubscriptionClock),
+    FdRead(SubscriptionFdReadwrite),
+    FdWrite(SubscriptionFdReadwrite),
 }
 
 pub type SubClockFlags = u16;
