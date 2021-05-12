@@ -923,6 +923,13 @@ impl TryFrom<u8> for SdFlags {
     }
 }
 
+impl From<SdFlags> for u8 {
+    #[inline]
+    fn from(flags: SdFlags) -> Self {
+        flags.bits
+    }
+}
+
 bitflags! {
     #[derive(Default)]
     pub struct SiFlags: u16 { 
@@ -938,6 +945,14 @@ impl TryFrom<u16> for SiFlags {
         SiFlags::from_bits(code).ok_or(())
     }
 }
+
+impl From<SiFlags> for u16 {
+    #[inline]
+    fn from(flags: SiFlags) -> Self {
+        flags.bits
+    }
+}
+
 
 bitflags! {
     #[derive(Default)]
@@ -959,6 +974,13 @@ impl TryFrom<u16> for RiFlags {
     }
 }
 
+impl From<RiFlags> for u16 {
+    #[inline]
+    fn from(flags: RiFlags) -> Self {
+        flags.bits
+    }
+}
+
 bitflags! {
     #[derive(Default)]
     pub struct RoFlags: u16 { 
@@ -973,5 +995,12 @@ impl TryFrom<u16> for RoFlags {
     #[inline]
     fn try_from(code: u16) -> Result<Self, Self::Error> {
         RoFlags::from_bits(code).ok_or(())
+    }
+}
+
+impl From<RoFlags> for u16 {
+    #[inline]
+    fn from(flags: RoFlags) -> Self {
+        flags.bits
     }
 }
