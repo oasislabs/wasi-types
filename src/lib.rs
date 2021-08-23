@@ -85,7 +85,7 @@ pub struct Device(u64);
 /// A reference to the offset of a directory entry.
 #[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Prim)]
-pub struct DirCookie(u64);
+pub struct DirCookie(pub u64);
 
 impl DirCookie {
     /// Creates a new `DirCookie` repreenting a permanent reference to the first directory entry
@@ -97,7 +97,7 @@ impl DirCookie {
 
 /// A directory entry.
 #[repr(C)]
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct DirEnt {
     /// The offset of the next directory entry stored in this directory.
     pub next: DirCookie,
