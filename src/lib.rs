@@ -867,9 +867,9 @@ pub type UserData = u64;
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq, Prim)]
 pub enum Whence {
+    Start,
     Current,
     End,
-    Start,
 }
 
 impl From<Whence> for u8 {
